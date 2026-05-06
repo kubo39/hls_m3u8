@@ -1,0 +1,17 @@
+.dub
+docs.json
+__dummy.html
+docs/
+/hls_m3u8
+hls_m3u8.so
+hls_m3u8.dylib
+hls_m3u8.dll
+libhls_m3u8.a
+hls_m3u8.a
+hls_m3u8.lib
+hls_m3u8-test-*
+*.exe
+*.pdb
+*.o
+*.obj
+*.lst

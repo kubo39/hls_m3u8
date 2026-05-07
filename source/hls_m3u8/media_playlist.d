@@ -96,8 +96,7 @@ struct MediaPlaylist
 
         foreach (seg; segments)
         {
-            buf ~= format!"#EXTINF:%.3f,\n"(seg.duration.total!"msecs" / 1000);
-            buf ~= seg.uri ~ "\n";
+            buf ~= seg.serialize();
         }
 
         if (hasEndList)
@@ -170,6 +169,30 @@ unittest
         ~ "\n"
         ~ "#EXTINF:5.000,\n"
         ~ "segment001.ts\n"
+        ~ "#EXT-X-ENDLIST\n"
+    );
+}
+
+///
+unittest
+{
+    import core.time : seconds;
+
+    auto playlist = MediaPlaylist(targetDuration: 5.seconds, hasEndList: true);
+    playlist.addSegment(MediaSegment("segment001.ts", 3.seconds));
+    playlist.addSegment(MediaSegment("segment002.ts", 4.seconds, hasDiscontinuity: true));
+
+    assert(playlist.serialize() ==
+        "#EXTM3U\n"
+        ~ "#EXT-X-VERSION:3\n"
+        ~ "#EXT-X-TARGETDURATION:5\n"
+        ~ "#EXT-X-MEDIA-SEQUENCE:0\n"
+        ~ "\n"
+        ~ "#EXTINF:3.000,\n"
+        ~ "segment001.ts\n"
+        ~ "#EXT-X-DISCONTINUITY\n"
+        ~ "#EXTINF:4.000,\n"
+        ~ "segment002.ts\n"
         ~ "#EXT-X-ENDLIST\n"
     );
 }

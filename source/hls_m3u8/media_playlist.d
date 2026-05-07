@@ -17,8 +17,6 @@ public import hls_m3u8.media_segment;
 
 @safe:
 
-enum HLS_VERSION = 3;
-
 /// Provides mutability information about a Media Playlist (EXT-X-PLAYLIST-TYPE).
 /// See [RFC 8216 §4.3.3.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.5).
 enum PlaylistType
@@ -62,6 +60,22 @@ struct MediaPlaylist
     }
 
     /**
+     * Returns the required HLS version based on the tags used.
+     */
+    uint requiredVersion()
+    {
+        // v3: EXTINF with decimal duration (always used)
+        uint ver = 3;
+        foreach (seg; segments)
+        {
+            auto segVer = seg.requiredVersion();
+            if (segVer > ver)
+                ver = segVer;
+        }
+        return ver;
+    }
+
+    /**
      * Serialize the playlist and its media segments.
      */
     string serialize()
@@ -75,7 +89,7 @@ struct MediaPlaylist
 
         auto buf = appender!string;
         buf ~= "#EXTM3U\n";
-        buf ~= format!"#EXT-X-VERSION:%d\n"(HLS_VERSION);
+        buf ~= format!"#EXT-X-VERSION:%d\n"(requiredVersion());
         buf ~= format!"#EXT-X-TARGETDURATION:%d\n"((maxDur.total!"msecs" + 999) / 1000);
         buf ~= format!"#EXT-X-MEDIA-SEQUENCE:%d\n"(mediaSequence);
 
@@ -223,6 +237,39 @@ unittest
         ~ "segment001.ts\n"
         ~ "#EXTINF:4.000,\n"
         ~ "segment002.ts\n"
+        ~ "#EXT-X-ENDLIST\n"
+    );
+}
+
+///
+unittest
+{
+    import core.time : seconds;
+    import std.typecons : nullable;
+
+    auto playlist = MediaPlaylist(targetDuration: 10.seconds, hasEndList: true);
+    playlist.addSegment(MediaSegment(
+        "main.ts", 5.seconds,
+        byteRange: ByteRange(length: 10000, offset: 0uL.nullable).nullable,
+    ));
+    playlist.addSegment(MediaSegment(
+        "main.ts", 5.seconds,
+        byteRange: ByteRange(length: 15000, offset: 10000uL.nullable).nullable,
+    ));
+
+    assert(playlist.requiredVersion() == 4);
+    assert(playlist.serialize() ==
+        "#EXTM3U\n"
+        ~ "#EXT-X-VERSION:4\n"
+        ~ "#EXT-X-TARGETDURATION:10\n"
+        ~ "#EXT-X-MEDIA-SEQUENCE:0\n"
+        ~ "\n"
+        ~ "#EXT-X-BYTERANGE:10000@0\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "main.ts\n"
+        ~ "#EXT-X-BYTERANGE:15000@10000\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "main.ts\n"
         ~ "#EXT-X-ENDLIST\n"
     );
 }

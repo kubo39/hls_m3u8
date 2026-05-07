@@ -16,6 +16,18 @@ private import std.typecons : Nullable;
 
 @safe:
 
+/// A sub-range of a resource (EXT-X-BYTERANGE).
+/// See [RFC 8216 §4.3.2.2](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.2).
+struct ByteRange
+{
+    /// The length of the sub-range in bytes.
+    ulong length;
+
+    /// The offset from the beginning of the resource. If not specified,
+    /// the sub-range begins at the byte following the end of the previous sub-range.
+    Nullable!ulong offset;
+}
+
 /**
  * A media segment.
  */
@@ -37,6 +49,21 @@ struct MediaSegment
     /// See [RFC 8216 §4.3.2.6](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.6).
     Nullable!SysTime programDateTime;
 
+    /// A sub-range of the resource identified by the URI (EXT-X-BYTERANGE).
+    /// See [RFC 8216 §4.3.2.2](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.2).
+    Nullable!ByteRange byteRange;
+
+    /**
+     * Returns the minimum HLS version required by this segment's tags.
+     */
+    uint requiredVersion()
+    {
+        uint ver = 3;
+        if (!byteRange.isNull)
+            ver = ver > 4 ? ver : 4; // v4: EXT-X-BYTERANGE
+        return ver;
+    }
+
     /**
      * Serialize the media segment.
      */
@@ -48,6 +75,14 @@ struct MediaSegment
             buf ~= "#EXT-X-DISCONTINUITY\n";
         if (!programDateTime.isNull)
             buf ~= format!"#EXT-X-PROGRAM-DATE-TIME:%s\n"(programDateTime.get.toISOExtString());
+        if (!byteRange.isNull)
+        {
+            auto br = byteRange.get;
+            if (br.offset.isNull)
+                buf ~= format!"#EXT-X-BYTERANGE:%d\n"(br.length);
+            else
+                buf ~= format!"#EXT-X-BYTERANGE:%d@%d\n"(br.length, br.offset.get);
+        }
         buf ~= format!"#EXTINF:%.3f,\n"(duration.total!"msecs" / 1000);
         buf ~= uri ~ "\n";
 

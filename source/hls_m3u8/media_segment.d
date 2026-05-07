@@ -28,6 +28,17 @@ struct ByteRange
     Nullable!ulong offset;
 }
 
+/// Specifies how to obtain the Media Initialization Section (EXT-X-MAP).
+/// See [RFC 8216 §4.3.2.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.5).
+struct MediaInitializationSection
+{
+    /// The URI of the resource containing the initialization section.
+    string uri;
+
+    /// An optional byte range within the resource.
+    Nullable!ByteRange byteRange;
+}
+
 /**
  * A media segment.
  */
@@ -53,6 +64,10 @@ struct MediaSegment
     /// See [RFC 8216 §4.3.2.2](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.2).
     Nullable!ByteRange byteRange;
 
+    /// The Media Initialization Section for this segment (EXT-X-MAP).
+    /// See [RFC 8216 §4.3.2.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.5).
+    Nullable!MediaInitializationSection map;
+
     /**
      * Returns the minimum HLS version required by this segment's tags.
      */
@@ -61,6 +76,8 @@ struct MediaSegment
         uint ver = 3;
         if (!byteRange.isNull)
             ver = ver > 4 ? ver : 4; // v4: EXT-X-BYTERANGE
+        if (!map.isNull)
+            ver = ver > 6 ? ver : 6; // v6: EXT-X-MAP in Media Playlist
         return ver;
     }
 
@@ -73,6 +90,20 @@ struct MediaSegment
 
         if (hasDiscontinuity)
             buf ~= "#EXT-X-DISCONTINUITY\n";
+        if (!map.isNull)
+        {
+            auto m = map.get;
+            if (m.byteRange.isNull)
+                buf ~= format!"#EXT-X-MAP:URI=\"%s\"\n"(m.uri);
+            else
+            {
+                auto br = m.byteRange.get;
+                if (br.offset.isNull)
+                    buf ~= format!"#EXT-X-MAP:URI=\"%s\",BYTERANGE=\"%d\"\n"(m.uri, br.length);
+                else
+                    buf ~= format!"#EXT-X-MAP:URI=\"%s\",BYTERANGE=\"%d@%d\"\n"(m.uri, br.length, br.offset.get);
+            }
+        }
         if (!programDateTime.isNull)
             buf ~= format!"#EXT-X-PROGRAM-DATE-TIME:%s\n"(programDateTime.get.toISOExtString());
         if (!byteRange.isNull)

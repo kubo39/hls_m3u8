@@ -273,3 +273,35 @@ unittest
         ~ "#EXT-X-ENDLIST\n"
     );
 }
+
+///
+unittest
+{
+    import core.time : seconds;
+    import std.typecons : nullable;
+
+    auto initSection = MediaInitializationSection(uri: "init.mp4").nullable;
+    auto playlist = MediaPlaylist(targetDuration: 6.seconds, hasEndList: true);
+    playlist.addSegment(MediaSegment(
+        "segment001.m4s", 6.seconds,
+        map: initSection,
+    ));
+    playlist.addSegment(MediaSegment(
+        "segment002.m4s", 6.seconds,
+    ));
+
+    assert(playlist.requiredVersion() == 6);
+    assert(playlist.serialize() ==
+        "#EXTM3U\n"
+        ~ "#EXT-X-VERSION:6\n"
+        ~ "#EXT-X-TARGETDURATION:6\n"
+        ~ "#EXT-X-MEDIA-SEQUENCE:0\n"
+        ~ "\n"
+        ~ "#EXT-X-MAP:URI=\"init.mp4\"\n"
+        ~ "#EXTINF:6.000,\n"
+        ~ "segment001.m4s\n"
+        ~ "#EXTINF:6.000,\n"
+        ~ "segment002.m4s\n"
+        ~ "#EXT-X-ENDLIST\n"
+    );
+}

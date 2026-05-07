@@ -196,3 +196,33 @@ unittest
         ~ "#EXT-X-ENDLIST\n"
     );
 }
+
+///
+unittest
+{
+    import core.time : seconds;
+    import std.datetime : DateTime, UTC;
+    import std.datetime.systime : SysTime;
+    import std.typecons : nullable;
+
+    auto playlist = MediaPlaylist(targetDuration: 5.seconds, hasEndList: true);
+    playlist.addSegment(MediaSegment(
+        "segment001.ts", 3.seconds,
+        programDateTime: SysTime(DateTime(2026, 5, 8, 12, 0, 0), UTC()).nullable,
+    ));
+    playlist.addSegment(MediaSegment("segment002.ts", 4.seconds));
+
+    assert(playlist.serialize() ==
+        "#EXTM3U\n"
+        ~ "#EXT-X-VERSION:3\n"
+        ~ "#EXT-X-TARGETDURATION:5\n"
+        ~ "#EXT-X-MEDIA-SEQUENCE:0\n"
+        ~ "\n"
+        ~ "#EXT-X-PROGRAM-DATE-TIME:2026-05-08T12:00:00Z\n"
+        ~ "#EXTINF:3.000,\n"
+        ~ "segment001.ts\n"
+        ~ "#EXTINF:4.000,\n"
+        ~ "segment002.ts\n"
+        ~ "#EXT-X-ENDLIST\n"
+    );
+}

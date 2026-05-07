@@ -10,7 +10,9 @@ module hls_m3u8.media_segment;
 private import core.time : Duration;
 
 private import std.array : appender;
+private import std.datetime.systime : SysTime;
 private import std.format : format;
+private import std.typecons : Nullable;
 
 @safe:
 
@@ -31,6 +33,10 @@ struct MediaSegment
     /// See [RFC 8216 §4.3.2.3](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.3).
     bool hasDiscontinuity;
 
+    /// The absolute date and time of the first sample of the segment (EXT-X-PROGRAM-DATE-TIME).
+    /// See [RFC 8216 §4.3.2.6](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.6).
+    Nullable!SysTime programDateTime;
+
     /**
      * Serialize the media segment.
      */
@@ -40,6 +46,8 @@ struct MediaSegment
 
         if (hasDiscontinuity)
             buf ~= "#EXT-X-DISCONTINUITY\n";
+        if (!programDateTime.isNull)
+            buf ~= format!"#EXT-X-PROGRAM-DATE-TIME:%s\n"(programDateTime.get.toISOExtString());
         buf ~= format!"#EXTINF:%.3f,\n"(duration.total!"msecs" / 1000);
         buf ~= uri ~ "\n";
 

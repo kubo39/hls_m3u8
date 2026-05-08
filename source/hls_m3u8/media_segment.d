@@ -106,14 +106,13 @@ struct MediaSegment
      */
     uint requiredVersion()
     {
-        uint ver = 3;
-        if (!byteRange.isNull)
-            ver = ver > 4 ? ver : 4; // v4: EXT-X-BYTERANGE
-        if (!key.isNull && key.get.method == EncryptionMethod.sampleAes)
-            ver = ver > 5 ? ver : 5; // v5: SAMPLE-AES
         if (!map.isNull)
-            ver = ver > 6 ? ver : 6; // v6: EXT-X-MAP in Media Playlist
-        return ver;
+            return 6; // v6: EXT-X-MAP in Media Playlist
+        if (!key.isNull && key.get.method == EncryptionMethod.sampleAes)
+            return 5; // v5: SAMPLE-AES
+        if (!byteRange.isNull)
+            return 4; // v4: EXT-X-BYTERANGE
+        return 3;
     }
 
     /**

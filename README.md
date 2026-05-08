@@ -1,11 +1,10 @@
 # hls_m3u8
 
-A [HLS][rfc8216] m3u8 playlist library for D.
-Currently supports playlist generation only (parsing is not yet implemented).
+A [HLS][rfc8216] m3u8 parser/generator for D.
 
 ## Usage
 
-### Generate a VOD playlist
+### Generate a Media Playlist
 
 ```d
 import core.time : seconds;
@@ -15,7 +14,7 @@ auto playlist = MediaPlaylist(targetDuration: 5.seconds, hasEndList: true);
 playlist.addSegment(MediaSegment("segment001.ts", 3.seconds));
 playlist.addSegment(MediaSegment("segment002.ts", 4.seconds));
 
-string m3u8 = playlist.serialize();
+string m3u8 = playlist.toString();
 ```
 
 Output:
@@ -31,6 +30,45 @@ segment001.ts
 #EXTINF:4.000,
 segment002.ts
 #EXT-X-ENDLIST
+```
+
+### Parse a Media Playlist
+
+```d
+import hls_m3u8;
+
+auto playlist = MediaPlaylist.fromString(m3u8Input);
+```
+
+### Generate a Master Playlist
+
+```d
+import hls_m3u8;
+import std.typecons : nullable;
+
+auto master = MasterPlaylist();
+master.addVariant(VariantStream(
+    "720p/stream.m3u8",
+    bandwidth: 2_560_000,
+    codecs: "avc1.4d401e,mp4a.40.2".nullable,
+    resolution: Resolution(1280, 720).nullable,
+));
+master.addVariant(VariantStream(
+    "1080p/stream.m3u8",
+    bandwidth: 7_680_000,
+    codecs: "avc1.4d401e,mp4a.40.2".nullable,
+    resolution: Resolution(1920, 1080).nullable,
+));
+
+string m3u8 = master.toString();
+```
+
+### Parse a Master Playlist
+
+```d
+import hls_m3u8;
+
+auto master = MasterPlaylist.fromString(m3u8Input);
 ```
 
 ## License

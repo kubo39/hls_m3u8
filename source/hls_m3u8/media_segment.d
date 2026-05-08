@@ -118,7 +118,7 @@ struct MediaSegment
     /**
      * Serialize the media segment.
      */
-    string serialize()
+    string toString()
     {
         auto buf = appender!string;
 

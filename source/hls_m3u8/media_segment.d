@@ -57,6 +57,9 @@ struct MediaSegment
     bool hasDiscontinuity;
 
     /// The absolute date and time of the first sample of the segment (EXT-X-PROGRAM-DATE-TIME).
+    /// Serialized via SysTime.toISOExtString(). RFC 8216 SHOULD recommends millisecond-precision
+    /// fractional seconds, but we use SysTime's default output which omits zero fractional parts
+    /// and may include sub-millisecond digits. This is valid ISO 8601 and not a MUST requirement.
     /// See [RFC 8216 §4.3.2.6](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.6).
     Nullable!SysTime programDateTime;
 

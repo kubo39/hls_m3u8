@@ -28,6 +28,32 @@ struct ByteRange
     Nullable!ulong offset;
 }
 
+/// The encryption method for media segments (EXT-X-KEY).
+/// See [RFC 8216 §4.3.2.4](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.4).
+enum EncryptionMethod
+{
+    /// No encryption.
+    none,
+    /// AES-128 encryption with PKCS7 padding.
+    aes128,
+    /// SAMPLE-AES encryption.
+    sampleAes,
+}
+
+/// Specifies how a media segment is encrypted (EXT-X-KEY).
+/// See [RFC 8216 §4.3.2.4](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.4).
+struct EncryptionKey
+{
+    /// The encryption method.
+    EncryptionMethod method;
+
+    /// The URI for obtaining the key. Required unless method is none.
+    Nullable!string uri;
+
+    /// The initialization vector as a 128-bit hexadecimal number.
+    Nullable!(ubyte[16]) iv;
+}
+
 /// Specifies how to obtain the Media Initialization Section (EXT-X-MAP).
 /// See [RFC 8216 §4.3.2.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.5).
 struct MediaInitializationSection
@@ -71,6 +97,10 @@ struct MediaSegment
     /// See [RFC 8216 §4.3.2.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.5).
     Nullable!MediaInitializationSection map;
 
+    /// The encryption key for this segment (EXT-X-KEY).
+    /// See [RFC 8216 §4.3.2.4](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.4).
+    Nullable!EncryptionKey key;
+
     /**
      * Returns the minimum HLS version required by this segment's tags.
      */
@@ -79,6 +109,8 @@ struct MediaSegment
         uint ver = 3;
         if (!byteRange.isNull)
             ver = ver > 4 ? ver : 4; // v4: EXT-X-BYTERANGE
+        if (!key.isNull && key.get.method == EncryptionMethod.sampleAes)
+            ver = ver > 5 ? ver : 5; // v5: SAMPLE-AES
         if (!map.isNull)
             ver = ver > 6 ? ver : 6; // v6: EXT-X-MAP in Media Playlist
         return ver;
@@ -93,6 +125,30 @@ struct MediaSegment
 
         if (hasDiscontinuity)
             buf ~= "#EXT-X-DISCONTINUITY\n";
+        if (!key.isNull)
+        {
+            auto k = key.get;
+            final switch (k.method)
+            {
+                case EncryptionMethod.none:
+                    buf ~= "#EXT-X-KEY:METHOD=NONE\n";
+                    break;
+                case EncryptionMethod.aes128:
+                case EncryptionMethod.sampleAes:
+                    if (k.uri.isNull)
+                        throw new Exception("EXT-X-KEY: URI is required when METHOD is not NONE");
+                    string method = k.method == EncryptionMethod.aes128 ? "AES-128" : "SAMPLE-AES";
+                    buf ~= format!"#EXT-X-KEY:METHOD=%s,URI=\"%s\""(method, k.uri.get);
+                    if (!k.iv.isNull)
+                    {
+                        buf ~= ",IV=0x";
+                        foreach (b; k.iv.get)
+                            buf ~= format!"%02X"(b);
+                    }
+                    buf ~= "\n";
+                    break;
+            }
+        }
         if (!map.isNull)
         {
             auto m = map.get;

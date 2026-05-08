@@ -305,3 +305,40 @@ unittest
         ~ "#EXT-X-ENDLIST\n"
     );
 }
+
+///
+unittest
+{
+    import core.time : seconds;
+    import std.typecons : nullable;
+
+    ubyte[16] iv = 0;
+    iv[15] = 1;
+    auto encKey = EncryptionKey(
+        method: EncryptionMethod.aes128,
+        uri: "https://example.com/key.bin".nullable,
+        iv: iv.nullable,
+    ).nullable;
+
+    auto playlist = MediaPlaylist(targetDuration: 5.seconds, hasEndList: true);
+    playlist.addSegment(MediaSegment(
+        "segment001.ts", 5.seconds,
+        key: encKey,
+    ));
+    playlist.addSegment(MediaSegment("segment002.ts", 5.seconds));
+
+    assert(playlist.requiredVersion() == 3);
+    assert(playlist.serialize() ==
+        "#EXTM3U\n"
+        ~ "#EXT-X-VERSION:3\n"
+        ~ "#EXT-X-TARGETDURATION:5\n"
+        ~ "#EXT-X-MEDIA-SEQUENCE:0\n"
+        ~ "\n"
+        ~ "#EXT-X-KEY:METHOD=AES-128,URI=\"https://example.com/key.bin\",IV=0x00000000000000000000000000000001\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "segment001.ts\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "segment002.ts\n"
+        ~ "#EXT-X-ENDLIST\n"
+    );
+}

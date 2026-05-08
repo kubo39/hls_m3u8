@@ -52,6 +52,10 @@ struct MediaPlaylist
     /// See [RFC 8216 §4.3.3.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.5).
     Nullable!PlaylistType playlistType;
 
+    /// Indicates that each media segment describes a single I-frame (EXT-X-I-FRAMES-ONLY).
+    /// See [RFC 8216 §4.3.3.6](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.6).
+    bool hasIFramesOnly;
+
     /// The list of media segments in the playlist.
     MediaSegment[] segments;
 
@@ -68,8 +72,9 @@ struct MediaPlaylist
      */
     uint requiredVersion()
     {
-        // v3: EXTINF with decimal duration (always used)
         uint ver = 3;
+        if (hasIFramesOnly)
+            ver = 4; // v4: EXT-X-I-FRAMES-ONLY
         foreach (seg; segments)
         {
             auto segVer = seg.requiredVersion();
@@ -111,6 +116,8 @@ struct MediaPlaylist
                     break;
             }
         }
+        if (hasIFramesOnly)
+            buf ~= "#EXT-X-I-FRAMES-ONLY\n";
 
         buf ~= "\n";
 
@@ -374,6 +381,44 @@ unittest
         ~ "#EXT-X-DISCONTINUITY\n"
         ~ "#EXTINF:5.000,\n"
         ~ "segment002.ts\n"
+        ~ "#EXT-X-ENDLIST\n"
+    );
+}
+
+///
+unittest
+{
+    import core.time : seconds;
+    import std.typecons : nullable;
+
+    auto playlist = MediaPlaylist(
+        targetDuration: 5.seconds,
+        hasEndList: true,
+        hasIFramesOnly: true,
+    );
+    playlist.addSegment(MediaSegment(
+        "main.ts", 5.seconds,
+        byteRange: ByteRange(length: 10000, offset: 0uL.nullable).nullable,
+    ));
+    playlist.addSegment(MediaSegment(
+        "main.ts", 5.seconds,
+        byteRange: ByteRange(length: 12000, offset: 10000uL.nullable).nullable,
+    ));
+
+    assert(playlist.requiredVersion() == 4);
+    assert(playlist.serialize() ==
+        "#EXTM3U\n"
+        ~ "#EXT-X-VERSION:4\n"
+        ~ "#EXT-X-TARGETDURATION:5\n"
+        ~ "#EXT-X-MEDIA-SEQUENCE:0\n"
+        ~ "#EXT-X-I-FRAMES-ONLY\n"
+        ~ "\n"
+        ~ "#EXT-X-BYTERANGE:10000@0\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "main.ts\n"
+        ~ "#EXT-X-BYTERANGE:12000@10000\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "main.ts\n"
         ~ "#EXT-X-ENDLIST\n"
     );
 }

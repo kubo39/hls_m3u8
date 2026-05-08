@@ -78,9 +78,21 @@ struct MediaSegment
     /// See [RFC 8216 §4.3.2.1](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.1).
     Duration duration;
 
+    /// A sub-range of the resource identified by the URI (EXT-X-BYTERANGE).
+    /// See [RFC 8216 §4.3.2.2](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.2).
+    Nullable!ByteRange byteRange;
+
     /// Indicates a discontinuity between this segment and the previous one (EXT-X-DISCONTINUITY).
     /// See [RFC 8216 §4.3.2.3](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.3).
     bool hasDiscontinuity;
+
+    /// The encryption key for this segment (EXT-X-KEY).
+    /// See [RFC 8216 §4.3.2.4](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.4).
+    Nullable!EncryptionKey key;
+
+    /// The Media Initialization Section for this segment (EXT-X-MAP).
+    /// See [RFC 8216 §4.3.2.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.5).
+    Nullable!MediaInitializationSection map;
 
     /// The absolute date and time of the first sample of the segment (EXT-X-PROGRAM-DATE-TIME).
     /// Serialized via SysTime.toISOExtString(). RFC 8216 SHOULD recommends millisecond-precision
@@ -88,18 +100,6 @@ struct MediaSegment
     /// and may include sub-millisecond digits. This is valid ISO 8601 and not a MUST requirement.
     /// See [RFC 8216 §4.3.2.6](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.6).
     Nullable!SysTime programDateTime;
-
-    /// A sub-range of the resource identified by the URI (EXT-X-BYTERANGE).
-    /// See [RFC 8216 §4.3.2.2](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.2).
-    Nullable!ByteRange byteRange;
-
-    /// The Media Initialization Section for this segment (EXT-X-MAP).
-    /// See [RFC 8216 §4.3.2.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.5).
-    Nullable!MediaInitializationSection map;
-
-    /// The encryption key for this segment (EXT-X-KEY).
-    /// See [RFC 8216 §4.3.2.4](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.2.4).
-    Nullable!EncryptionKey key;
 
     /**
      * Returns the minimum HLS version required by this segment's tags.

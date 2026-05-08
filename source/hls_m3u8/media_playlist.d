@@ -40,13 +40,13 @@ struct MediaPlaylist
     /// See [RFC 8216 §4.3.3.2](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.2).
     uint mediaSequence;
 
-    /// The mutability type of the playlist (EXT-X-PLAYLIST-TYPE).
-    /// See [RFC 8216 §4.3.3.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.5).
-    Nullable!PlaylistType playlistType;
-
     /// Indicates that no more media segments will be added to the playlist (EXT-X-ENDLIST).
     /// See [RFC 8216 §4.3.3.4](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.4).
     bool hasEndList;
+
+    /// The mutability type of the playlist (EXT-X-PLAYLIST-TYPE).
+    /// See [RFC 8216 §4.3.3.5](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.5).
+    Nullable!PlaylistType playlistType;
 
     /// The list of media segments in the playlist.
     MediaSegment[] segments;

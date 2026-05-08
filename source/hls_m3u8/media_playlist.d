@@ -40,6 +40,10 @@ struct MediaPlaylist
     /// See [RFC 8216 §4.3.3.2](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.2).
     uint mediaSequence;
 
+    /// The discontinuity sequence number of the first media segment (EXT-X-DISCONTINUITY-SEQUENCE).
+    /// See [RFC 8216 §4.3.3.3](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.3).
+    uint discontinuitySequence;
+
     /// Indicates that no more media segments will be added to the playlist (EXT-X-ENDLIST).
     /// See [RFC 8216 §4.3.3.4](https://datatracker.ietf.org/doc/html/rfc8216#section-4.3.3.4).
     bool hasEndList;
@@ -92,6 +96,8 @@ struct MediaPlaylist
         buf ~= format!"#EXT-X-VERSION:%d\n"(requiredVersion());
         buf ~= format!"#EXT-X-TARGETDURATION:%d\n"((maxDur.total!"msecs" + 999) / 1000);
         buf ~= format!"#EXT-X-MEDIA-SEQUENCE:%d\n"(mediaSequence);
+        if (discontinuitySequence != 0)
+            buf ~= format!"#EXT-X-DISCONTINUITY-SEQUENCE:%d\n"(discontinuitySequence);
 
         if (!playlistType.isNull)
         {
@@ -337,6 +343,35 @@ unittest
         ~ "#EXT-X-KEY:METHOD=AES-128,URI=\"https://example.com/key.bin\",IV=0x00000000000000000000000000000001\n"
         ~ "#EXTINF:5.000,\n"
         ~ "segment001.ts\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "segment002.ts\n"
+        ~ "#EXT-X-ENDLIST\n"
+    );
+}
+
+///
+unittest
+{
+    import core.time : seconds;
+
+    auto playlist = MediaPlaylist(
+        targetDuration: 5.seconds,
+        discontinuitySequence: 3,
+        hasEndList: true,
+    );
+    playlist.addSegment(MediaSegment("segment001.ts", 5.seconds));
+    playlist.addSegment(MediaSegment("segment002.ts", 5.seconds, hasDiscontinuity: true));
+
+    assert(playlist.serialize() ==
+        "#EXTM3U\n"
+        ~ "#EXT-X-VERSION:3\n"
+        ~ "#EXT-X-TARGETDURATION:5\n"
+        ~ "#EXT-X-MEDIA-SEQUENCE:0\n"
+        ~ "#EXT-X-DISCONTINUITY-SEQUENCE:3\n"
+        ~ "\n"
+        ~ "#EXTINF:5.000,\n"
+        ~ "segment001.ts\n"
+        ~ "#EXT-X-DISCONTINUITY\n"
         ~ "#EXTINF:5.000,\n"
         ~ "segment002.ts\n"
         ~ "#EXT-X-ENDLIST\n"

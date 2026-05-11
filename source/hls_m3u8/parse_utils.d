@@ -13,18 +13,10 @@ private import std.conv : ConvException, to;
 private import std.math : lround;
 private import std.typecons : Nullable, nullable;
 
+public import hls_m3u8.exception : M3U8ParseException;
 public import hls_m3u8.media_segment : ByteRange;
 
 @safe:
-
-/// Exception thrown when parsing an m3u8 playlist fails.
-class M3U8ParseException : Exception
-{
-    this(string msg, string file = __FILE__, size_t line = __LINE__)
-    {
-        super(msg, file, line);
-    }
-}
 
 /**
  * Parse an EXTINF duration value.

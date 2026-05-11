@@ -123,8 +123,9 @@ string[string] parseAttributeList(string attrStr)
  */
 ubyte[16] parseHexIV(string hexStr)
 {
-    if (hexStr.length >= 2 && (hexStr[0 .. 2] == "0x" || hexStr[0 .. 2] == "0X"))
-        hexStr = hexStr[2 .. $];
+    if (hexStr.length < 2 || (hexStr[0 .. 2] != "0x" && hexStr[0 .. 2] != "0X"))
+        throw new M3U8ParseException("IV must start with 0x or 0X");
+    hexStr = hexStr[2 .. $];
 
     if (hexStr.length != 32)
         throw new M3U8ParseException("invalid IV length: expected 32 hex digits");
